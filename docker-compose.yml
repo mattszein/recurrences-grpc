@@ -8,4 +8,5 @@ services:
     volumes:
       - .:/recurrences_grpc
     ports:
-      - 4000:4000
+      - 4400:4400
+    command: cargo run --bin recurrences-server

@@ -1,5 +1,5 @@
 FROM rust:1.71.0-alpine3.18
-RUN apk add --no-cache musl-dev
+RUN apk add --no-cache musl-dev protoc protobuf-dev
 
 ENV APP_HOME /recurrences_grpc
 RUN mkdir $APP_HOME

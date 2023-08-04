@@ -3,8 +3,23 @@ name = "recurrences_grpc"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "recurrences-server"
+path = "src/server.rs"
+
+[[bin]]
+name = "recurrences-client"
+path = "src/client.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 rrule = "0.11.0"
+chrono = "0.4.19"
+chrono-tz = "0.8.1"
+tonic = "0.9"
+prost = "0.11"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[build-dependencies]
+tonic-build = "0.9"
