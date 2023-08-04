@@ -1,0 +1,14 @@
+syntax = "proto3";
+package recurrencerule;
+
+service RruleProcessing {
+  rpc RruleToDates (RRuleRequest) returns (DatesReply);
+}
+
+message RRuleRequest {
+  string rrule = 1;
+}
+
+message DatesReply {
+  repeated string dates = 1;
+}
