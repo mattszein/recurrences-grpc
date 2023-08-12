@@ -3,6 +3,7 @@ package recurrencerule;
 
 service RruleProcessing {
   rpc RruleToDates (RRuleRequest) returns (DatesReply);
+  rpc DataRruleToDates (DataRrule) returns (DatesReply);
 }
 
 message RRuleRequest {
@@ -11,4 +12,23 @@ message RRuleRequest {
 
 message DatesReply {
   repeated string dates = 1;
+}
+
+message DataRrule {
+  repeated string by_week_day = 1;
+  repeated uint32 by_hour = 2;
+  repeated uint32 by_minute = 3;
+  repeated uint32 by_month = 4;
+  repeated int32 by_month_day = 5;
+  repeated uint32 by_second = 6;
+  repeated int32 by_set_pos = 7;
+  repeated int32 by_week_no = 8;
+  repeated int32 by_year_day = 9;
+  uint32 count = 10;
+  string dt_end = 11;
+  string dt_start = 12;
+  string freq = 13;
+  uint32 interval = 14;
+  string until = 15;
+  int32 week_start = 16;
 }

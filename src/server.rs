@@ -2,7 +2,7 @@ use tonic::{transport::Server, Request, Response, Status};
 
 use chrono::SecondsFormat;
 use recurrences_server::rrule_processing_server::{RruleProcessing, RruleProcessingServer};
-use recurrences_server::{DatesReply, RRuleRequest};
+use recurrences_server::{DataRrule, DatesReply, RRuleRequest};
 mod rrule_builder;
 
 pub mod recurrences_server {
@@ -16,9 +16,9 @@ pub struct MyRruleProcessing {}
 impl RruleProcessing for MyRruleProcessing {
     async fn rrule_to_dates(
         &self,
-        request: Request<RRuleRequest>, // Accept request of type HelloRequest
+        request: Request<RRuleRequest>, // Accept request of type RRuleRequest
     ) -> Result<Response<DatesReply>, Status> {
-        // Return an instance of type HelloReply
+        // Return an instance of type DatesReply
         println!("Got a request: {:?}", request);
         let rules: Vec<String> = rrule_builder::rrule_from_string(&request.into_inner().rrule)
             .dates
@@ -29,7 +29,21 @@ impl RruleProcessing for MyRruleProcessing {
             dates: rules, // We must use .into_inner() as the fields of gRPC requests and responses are private
         };
 
-        Ok(Response::new(reply)) // Send back our formatted greeting
+        Ok(Response::new(reply))
+    }
+
+    async fn data_rrule_to_dates(
+        &self,
+        request: Request<DataRrule>,
+    ) -> Result<Response<DatesReply>, Status> {
+        let data = &request.into_inner();
+        let rules: Vec<String> = rrule_builder::rrule_from_data(data)
+            .dates
+            .into_iter()
+            .map(|x| x.to_rfc3339_opts(SecondsFormat::Secs, true))
+            .collect();
+        let reply = recurrences_server::DatesReply { dates: rules };
+        Ok(Response::new(reply)) // Send back our dates
     }
 }
 
