@@ -46,4 +46,36 @@ mod tests {
         );
         assert_eq!(result, Err("[field_name] Error on 3".to_string()));
     }
+    #[test]
+    fn test_process_datetime_field_valid() {
+        let test_date = "2023-09-14T12:00:00";
+        let result = process_datetime_field(test_date, "dt_start");
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            NaiveDateTime::parse_from_str(test_date, "%Y-%m-%dT%H:%M:%S").unwrap()
+        );
+    }
+
+    #[test]
+    fn test_process_datetime_field_invalid_format() {
+        let test_date = "2023-09-14 12:00:00"; // Wrong format
+        let result = process_datetime_field(test_date, "dt_start");
+        assert!(result.is_err());
+        assert_eq!(
+            result,
+            Err("[dt_start] Invalid datetime format".to_string())
+        );
+    }
+
+    #[test]
+    fn test_process_datetime_field_empty() {
+        let test_date = "";
+        let result = process_datetime_field(test_date, "dt_start");
+        assert!(result.is_err());
+        assert_eq!(
+            result,
+            Err("[dt_start] Invalid datetime format".to_string())
+        );
+    }
 }
