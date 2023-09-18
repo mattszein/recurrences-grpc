@@ -6,4 +6,6 @@ RUN mkdir $APP_HOME
 WORKDIR $APP_HOME
 COPY . $APP_HOME
 
-CMD ["ls"]
+RUN cargo build
+
+CMD ["cargo run"]

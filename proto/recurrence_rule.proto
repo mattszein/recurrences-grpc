@@ -12,6 +12,9 @@ message RRuleRequest {
 
 message DatesReply {
   repeated string dates = 1;
+  string rrule = 2;
+  bool valid = 3;
+  repeated string errors = 4;
 }
 
 message DataRrule {

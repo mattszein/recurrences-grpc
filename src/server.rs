@@ -20,14 +20,40 @@ impl RruleProcessing for MyRruleProcessing {
     ) -> Result<Response<DatesReply>, Status> {
         // Return an instance of type DatesReply
         println!("Got a request: {:?}", request);
-        let rules: Vec<String> = rrule_builder::rrule_from_string(&request.into_inner().rrule)
-            .dates
-            .into_iter()
-            .map(|x| x.to_rfc3339_opts(SecondsFormat::Secs, true))
-            .collect();
-        let reply = recurrences_server::DatesReply {
-            dates: rules, // We must use .into_inner() as the fields of gRPC requests and responses are private
-        };
+        let mut errors: Vec<String> = vec![];
+        let result: rrule_builder::ProcessResult =
+            rrule_builder::rrule_from_string(&request.into_inner().rrule).unwrap_or_else(|e| {
+                errors.push(e.to_string());
+                rrule_builder::ProcessResult {
+                    rrule_result: None,
+                    rrule: "".to_string(),
+                    valid: false,
+                    errors: [].to_vec(),
+                }
+            });
+        let reply;
+        if errors.is_empty() {
+            let rules: Vec<String> = result
+                .rrule_result
+                .unwrap()
+                .dates
+                .into_iter()
+                .map(|x| x.to_rfc3339_opts(SecondsFormat::Secs, true))
+                .collect();
+            reply = recurrences_server::DatesReply {
+                dates: rules,
+                rrule: result.rrule,
+                valid: result.valid,
+                errors: result.errors,
+            };
+        } else {
+            reply = recurrences_server::DatesReply {
+                dates: vec![],
+                rrule: "".to_string(),
+                valid: false,
+                errors,
+            };
+        }
 
         Ok(Response::new(reply))
     }
@@ -36,13 +62,42 @@ impl RruleProcessing for MyRruleProcessing {
         &self,
         request: Request<DataRrule>,
     ) -> Result<Response<DatesReply>, Status> {
+        let mut errors: Vec<String> = vec![];
+
         let data = &request.into_inner();
-        let rules: Vec<String> = rrule_builder::rrule_from_data(data)
-            .dates
-            .into_iter()
-            .map(|x| x.to_rfc3339_opts(SecondsFormat::Secs, true))
-            .collect();
-        let reply = recurrences_server::DatesReply { dates: rules };
+        let result: rrule_builder::ProcessResult = rrule_builder::rrule_from_data(data)
+            .unwrap_or_else(|e| {
+                errors.push(e.to_string());
+                rrule_builder::ProcessResult {
+                    rrule_result: None,
+                    rrule: "".to_string(),
+                    valid: false,
+                    errors: [].to_vec(),
+                }
+            });
+        let reply;
+        if errors.is_empty() {
+            let rules: Vec<String> = result
+                .rrule_result
+                .unwrap()
+                .dates
+                .into_iter()
+                .map(|x| x.to_rfc3339_opts(SecondsFormat::Secs, true))
+                .collect();
+            reply = recurrences_server::DatesReply {
+                dates: rules,
+                rrule: result.rrule,
+                valid: result.valid,
+                errors: result.errors,
+            };
+        } else {
+            reply = recurrences_server::DatesReply {
+                dates: vec![],
+                rrule: "".to_string(),
+                valid: false,
+                errors,
+            };
+        }
         Ok(Response::new(reply)) // Send back our dates
     }
 }
