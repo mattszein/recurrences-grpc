@@ -7,10 +7,6 @@ edition = "2021"
 name = "recurrences-server"
 path = "src/server.rs"
 
-[[bin]]
-name = "recurrences-client"
-path = "src/client.rs"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
