@@ -16,6 +16,7 @@ chrono-tz = "0.8.1"
 tonic = "0.9"
 prost = "0.11"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+iso8601-duration = { version = "0.2.0", features = ["chrono"] }
 
 [build-dependencies]
 tonic-build = "0.9"

@@ -1,8 +1,11 @@
-use tonic::{transport::Server, Request, Response, Status};
-
+use chrono::DateTime;
 use chrono::SecondsFormat;
+use iso8601_duration::Duration;
 use recurrences_server::rrule_processing_server::{RruleProcessing, RruleProcessingServer};
-use recurrences_server::{DataRrule, DatesReply, RRuleRequest};
+use recurrences_server::{DataRequest, DataRrule, Dates, DatesReply, RRuleRequest};
+use rrule::Tz;
+use std::error::Error;
+use tonic::{transport::Server, Request, Response, Status};
 mod rrule_builder;
 
 pub mod recurrences_server {
@@ -11,6 +14,17 @@ pub mod recurrences_server {
 
 #[derive(Debug, Default)]
 pub struct MyRruleProcessing {}
+
+pub fn add_duration(date: DateTime<Tz>, duration: &String) -> Result<DateTime<Tz>, Box<dyn Error>> {
+    let iso_dur: Duration = duration
+        .parse()
+        .map_err(|e| format!("[duration] {:?}", e))?;
+    //let dur = Duration::from_std(iso_dur.to_std().map_err(|e| format!("{:?}", e))?)?;
+    Ok(date
+        + iso_dur
+            .to_chrono()
+            .ok_or("[duration] Error converting to chrono duration")?)
+}
 
 #[tonic::async_trait]
 impl RruleProcessing for MyRruleProcessing {
@@ -27,24 +41,26 @@ impl RruleProcessing for MyRruleProcessing {
                 rrule_builder::ProcessResult {
                     rrule_result: None,
                     rrule: "".to_string(),
-                    valid: false,
-                    errors: [].to_vec(),
                 }
             });
         let reply;
         if errors.is_empty() {
-            let rules: Vec<String> = result
+            let rules: Vec<Dates> = result
                 .rrule_result
                 .unwrap()
                 .dates
                 .into_iter()
-                .map(|x| x.to_rfc3339_opts(SecondsFormat::Secs, true))
+                .map(|x| Dates {
+                    start: x.to_rfc3339_opts(SecondsFormat::Secs, true),
+                    end: "".to_string(),
+                })
                 .collect();
+
             reply = recurrences_server::DatesReply {
                 dates: rules,
                 rrule: result.rrule,
-                valid: result.valid,
-                errors: result.errors,
+                valid: true,
+                errors,
             };
         } else {
             reply = recurrences_server::DatesReply {
@@ -60,35 +76,36 @@ impl RruleProcessing for MyRruleProcessing {
 
     async fn data_rrule_to_dates(
         &self,
-        request: Request<DataRrule>,
+        request: Request<DataRequest>,
     ) -> Result<Response<DatesReply>, Status> {
         let mut errors: Vec<String> = vec![];
-
-        let data = &request.into_inner();
-        let result: rrule_builder::ProcessResult = rrule_builder::rrule_from_data(data)
-            .unwrap_or_else(|e| {
-                errors.push(e.to_string());
-                rrule_builder::ProcessResult {
-                    rrule_result: None,
-                    rrule: "".to_string(),
-                    valid: false,
-                    errors: [].to_vec(),
-                }
-            });
+        let data_request = request.into_inner();
+        let result = rrule_builder::process_rrules(&data_request).unwrap_or_else(|e| {
+            errors.push(e.to_string());
+            rrule_builder::ProcessResult {
+                rrule_result: None,
+                rrule: "".to_string(),
+            }
+        });
         let reply;
         if errors.is_empty() {
-            let rules: Vec<String> = result
+            let dates: Vec<Dates> = result
                 .rrule_result
                 .unwrap()
                 .dates
                 .into_iter()
-                .map(|x| x.to_rfc3339_opts(SecondsFormat::Secs, true))
+                .map(|x: DateTime<Tz>| Dates {
+                    start: x.to_rfc3339_opts(SecondsFormat::Secs, true),
+                    end: add_duration(x, &data_request.duration)
+                        .expect("Reason")
+                        .to_rfc3339_opts(SecondsFormat::Secs, true),
+                })
                 .collect();
             reply = recurrences_server::DatesReply {
-                dates: rules,
+                dates,
                 rrule: result.rrule,
-                valid: result.valid,
-                errors: result.errors,
+                valid: true,
+                errors,
             };
         } else {
             reply = recurrences_server::DatesReply {
@@ -98,6 +115,7 @@ impl RruleProcessing for MyRruleProcessing {
                 errors,
             };
         }
+
         Ok(Response::new(reply)) // Send back our dates
     }
 }
