@@ -15,6 +15,12 @@ pub mod recurrences_server {
 #[derive(Debug, Default)]
 pub struct MyRruleProcessing {}
 
+fn set_default_env_var(key: &str, value: &str) {
+    if std::env::var(key).is_err() {
+        std::env::set_var(key, value);
+    }
+}
+
 pub fn add_duration(date: DateTime<Tz>, duration: &String) -> Result<DateTime<Tz>, Box<dyn Error>> {
     let iso_dur: Duration = duration
         .parse()
@@ -122,7 +128,12 @@ impl RruleProcessing for MyRruleProcessing {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "0.0.0.0:4400".parse()?;
+    set_default_env_var("PORT", "4400");
+    set_default_env_var("HOST", "0.0.0.0");
+    let port = std::env::var("PORT").unwrap();
+    let host = std::env::var("HOST").unwrap();
+
+    let addr = (host + ":" + &port).parse()?;
     let processer = MyRruleProcessing::default();
 
     Server::builder()
