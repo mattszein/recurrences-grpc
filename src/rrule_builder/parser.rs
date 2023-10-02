@@ -1,6 +1,10 @@
 use chrono::NaiveDateTime;
 
-pub fn process_field<T, U, F>(data: &[T], transform: F, field_name: &str) -> Result<Vec<U>, String>
+pub fn process_vec_field<T, U, F>(
+    data: &[T],
+    transform: F,
+    field_name: &str,
+) -> Result<Vec<U>, String>
 where
     F: Fn(&T) -> Result<U, String>,
 {
@@ -26,14 +30,14 @@ mod tests {
     fn test_process_field_success() {
         let data = vec![1, 2, 3, 4, 5];
         let result: Result<Vec<i8>, String> =
-            process_field(&data, |x| Ok((*x) as i8), "field_name");
+            process_vec_field(&data, |x| Ok((*x) as i8), "field_name");
         assert_eq!(result, Ok(vec![1, 2, 3, 4, 5]));
     }
 
     #[test]
     fn test_process_field_failure() {
         let data = vec![1, 2, 3, 4, 5];
-        let result: Result<Vec<i8>, String> = process_field(
+        let result: Result<Vec<i8>, String> = process_vec_field(
             &data,
             |x| {
                 if *x == 3 {
